@@ -42,10 +42,24 @@ $totalRamCapacity = $totalRamCapacity / 1GB
 $os = Get-CimInstance Win32_OperatingSystem | Select-Object LastBootUpTime
 $uptime = (Get-Date) - $os.LastBootUpTime
 
-Write-HostColor "%cVersion%c: $($buildName) $($buildNumber).$($buildRevision)" -colors "blue", "white"
-Write-HostColor "%cTPM%c: $($tpmVersion)" -colors "blue", "white"
-Write-HostColor "%cCPU%c: $($cpuName) @ $($maxClockSpeed)GHz" -colors "blue", "white"
-Write-HostColor "%cGPU%c: $($graphicsInfo.Name)" -colors "blue", "white"
-Write-HostColor "%cRAM%c: $($totalRamCapacity)GB @ $($highestSpeed)MT/s" -colors "blue", "white"
-Write-HostColor "%cUptime%c: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.Minutes) minutes" -colors "blue", "white"
-Write-HostColor "%cResolution%c: $($graphicsInfo.CurrentHorizontalResolution)x$($graphicsInfo.CurrentVerticalResolution) @ $($graphicsInfo.CurrentRefreshRate)Hz" -colors "blue", "white"
+# Grab networking information
+$networkInfo = Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object Description, MACAddress, DNSServerSearchOrder, IPAddress
+$dnsServers = $networkInfo.DNSServerSearchOrder -join ", "
+
+# Check pending reboots
+$componentPendingReboot = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"
+$updatePendingReboot = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired\"
+$isPendingReboot = if ($componentPendingReboot -or $updatePendingReboot) { "True" } else { "False" }
+
+Write-HostColor "%cVersion%c      : $($buildName) $($buildNumber).$($buildRevision)" -colors "blue", "white"
+Write-HostColor "%cTPM%c          : $($tpmVersion)" -colors "blue", "white"
+Write-HostColor "%cCPU%c          : $($cpuName) @ $($maxClockSpeed)GHz" -colors "blue", "white"
+Write-HostColor "%cGPU%c          : $($graphicsInfo.Name)" -colors "blue", "white"
+Write-HostColor "%cRAM%c          : $($totalRamCapacity)GB @ $($highestSpeed)MT/s" -colors "blue", "white"
+Write-HostColor "%cUptime%c       : $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.Minutes) minutes" -colors "blue", "white"
+Write-HostColor "%cResolution%c   : $($graphicsInfo.CurrentHorizontalResolution)x$($graphicsInfo.CurrentVerticalResolution) @ $($graphicsInfo.CurrentRefreshRate)Hz" -colors "blue", "white"
+Write-HostColor "%cMAC Address%c  : $($networkInfo.MACAddress)" -colors "blue", "white"
+Write-HostColor "%cDNS Addresses%c: $($dnsServers)" -colors "blue", "white"
+Write-HostColor "%cLocal Address%c: $($networkInfo.IPAddress)" -colors "blue", "white"
+Write-HostColor "%cAdapter%c      : $($networkInfo.Description)" -colors "blue", "white"
+Write-HostColor "%cPending Reboot%c: $($isPendingReboot)" -colors "blue", "white"
