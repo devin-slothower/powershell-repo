@@ -1,5 +1,11 @@
 . "$PSScriptRoot\color-print.ps1"
 
+$tpmInfo = Get-CimInstance -Namespace "Root\CIMV2\Security\MicrosoftTpm" -ClassName Win32_Tpm
+$cpuInfo = Get-CimInstance -ClassName Win32_Processor
+$graphicsInfo = Get-CimInstance -ClassName Win32_VideoController
+$ramInfo = Get-CimInstance -ClassName Win32_PhysicalMemory
+$networkInfo = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -Filter "IPEnabled = TRUE"
+
 # Grab OS version information from the registry
 $osInfo = Get-ItemProperty("HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion")
 $buildName = $osInfo.DisplayVersion
@@ -7,14 +13,12 @@ $buildNumber = $osInfo.CurrentBuild
 $buildRevision = $osInfo.UBR
 
 # Grab TPM Module version
-$tpmVersion = Get-CimInstance -Namespace "Root\CIMV2\Security\MicrosoftTpm" -ClassName Win32_Tpm | Select-Object SpecVersion
-$tpmVersion = $tpmVersion.SpecVersion
-if ($tpmVersion.contains(",")) { $tpmVersion = $tpmVersion.substring(0, $tpmVersion.IndexOf(",")) }
+$tpmInfo = $tpmInfo.SpecVersion
+if ($tpmInfo.contains(",")) { $tpmInfo = $tpmInfo.substring(0, $tpmInfo.IndexOf(",")) }
 
 # Grab CPU information
-$cpuInformation = Get-CimInstance -ClassName Win32_Processor | Select-Object Name, MaxClockSpeed
-$cpuName = $cpuInformation.Name.Trim()
-$maxClockSpeed = $cpuInformation.MaxClockSpeed
+$cpuName = $cpuInfo.Name.Trim()
+$maxClockSpeed = $cpuInfo.MaxClockSpeed
 try {
     $maxClockSpeed = [double]$maxClockSpeed
     $maxClockSpeed = $maxClockSpeed / 1000
@@ -22,13 +26,9 @@ try {
     $maxClockSpeed = "UNKNOWN"
 }
 
-# Grab Graphics information
-$graphicsInfo = Get-CimInstance -ClassName Win32_VideoController | Select-Object Name, CurrentHorizontalResolution, CurrentVerticalResolution, CurrentRefreshRate
-
 # Grab RAM Information
-$ramArray = Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, FormFactor
 $totalRamCapacity, $highestSpeed = [uint64]0, 0
-foreach ($ram in $ramArray) {
+foreach ($ram in $ramInfo) {
     $totalRamCapacity += [uint64]$ram.Capacity
 
     if ($ram.Speed -gt $highestSpeed) {
@@ -39,11 +39,9 @@ foreach ($ram in $ramArray) {
 $totalRamCapacity = $totalRamCapacity / 1GB
 
 # Grab Uptime
-$os = Get-CimInstance Win32_OperatingSystem | Select-Object LastBootUpTime
-$uptime = (Get-Date) - $os.LastBootUpTime
+$uptime = [TimeSpan]::FromMilliseconds([Environment]::TickCount64)
 
 # Grab networking information
-$networkInfo = Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object Description, MACAddress, DNSServerSearchOrder, IPAddress
 $dnsServers = $networkInfo.DNSServerSearchOrder -join ", "
 
 # Check pending reboots
@@ -52,7 +50,7 @@ $updatePendingReboot = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersio
 $isPendingReboot = if ($componentPendingReboot -or $updatePendingReboot) { "True" } else { "False" }
 
 Write-HostColor "%cVersion%c       : $($buildName) $($buildNumber).$($buildRevision)" -colors "blue", "white"
-Write-HostColor "%cTPM%c           : $($tpmVersion)" -colors "blue", "white"
+Write-HostColor "%cTPM%c           : $($tpmInfo)" -colors "blue", "white"
 Write-HostColor "%cCPU%c           : $($cpuName) @ $($maxClockSpeed)GHz" -colors "blue", "white"
 Write-HostColor "%cGPU%c           : $($graphicsInfo.Name)" -colors "blue", "white"
 Write-HostColor "%cRAM%c           : $($totalRamCapacity)GB @ $($highestSpeed)MT/s" -colors "blue", "white"
