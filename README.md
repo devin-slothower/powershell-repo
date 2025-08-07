@@ -29,6 +29,6 @@ This collection is licensed under the **MIT License** – see the `LICENSE` file
 ## Disclaimer – AI Assistance  
 
 > **Important:**  
-> Some scripts, comments, and documentation in this repository were **assisted by artificial intelligence** (e.g., GitHub Copilot, Azure OpenAI, PowerShellAI, PowerShell AI Assistant). AI‑generated code may contain inaccuracies or security considerations that were not manually reviewed. **Always review and test AI‑assisted scripts in a safe environment before using them in production.**  
+> Some scripts, comments, and documentation in this repository were **assisted by artificial intelligence** (GitHub Copilot GPT-4.1, Cerebras GPT-OSS-120B). AI‑generated code may contain inaccuracies or security considerations that were not manually reviewed. **Always review and test AI‑assisted scripts in a safe environment before using them in production.**  
 
 ---  
