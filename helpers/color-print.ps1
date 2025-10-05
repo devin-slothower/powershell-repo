@@ -1,27 +1,22 @@
 function Write-HostColor {
-    param (
-        [string]$formattedString,
-        [string[]]$colors,
-        [bool]$noNewLine = $false
-    )
+    param ([string]$formattedString, [string[]]$colors, [bool]$noNewLine = $false)
+    if ($colors.Length -eq 0) { $colors = @("White") }
 
-    if ($formattedString.startsWith("%c")) {
-        $formattedString = $formattedString.subString(2)
-    }
+    $stringSegment, $colorIndex = "", 0
+    if ($formattedString.StartsWith("%c")) { $formattedString = $formattedString.Substring(2) }
 
-    $segments = $formattedString -split '(?=%c)'
-    $colorIndex = 0
-
-    foreach ($segment in $segments) {
-        if ($segment.startsWith("%c")) {
-            $segment = $segment.subString(2)
-            $colorIndex++
+    for ($i = 0; $i -lt $formattedString.Length; $i++) {
+        if ($formattedString[$i] -eq "%" -and $formattedString[$i + 1] -eq "%") {
+            $stringSegment += "%"; $i++;
+        } elseif ($formattedString[$i] -eq "%" -and $formattedString[$i + 1] -eq "c") {
+            Write-Host $stringSegment -ForegroundColor $colors[$colorIndex] -NoNewline
+            $i++; $stringSegment = ""
+            if ($colorIndex + 1 -lt $colors.Length) { $colorIndex++ }
+        } else {
+            $stringSegment += $formattedString[$i]
         }
-        if ($segment.length -eq 0) { continue }
-        $color = if ($colorIndex -lt $colors.count) { $colors[$colorIndex] } else { "white" }
-
-        Write-Host -NoNewline -ForegroundColor $color $segment
     }
 
+    if ($stringSegment -ne "") { Write-Host $stringSegment -ForegroundColor $colors[$colorIndex] -NoNewline }
     if (-not $noNewLine) { Write-Host }
 }
